@@ -13,8 +13,10 @@ import { Select } from '@/components/Select';
 import { Badge } from '@/components/Badge';
 import { EmptyState } from '@/components/EmptyState';
 import { FullPageSpinner, Spinner } from '@/components/Spinner';
+import { ResponsiveTable, ResponsiveTableColumn } from '@/components/ResponsiveTable';
 import { getErrorMessage } from '@/lib/errors';
 import { useAuthStore } from '@/store/auth.store';
+import { Rendimiento } from '@/types/rendimientos';
 
 export const RendimientosPage = () => {
   const [page, setPage] = useState(1);
@@ -44,6 +46,45 @@ export const RendimientosPage = () => {
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   });
+
+  const columns: ResponsiveTableColumn<Rendimiento>[] = [
+    { header: 'Fecha', cell: (r) => new Date(r.fecha).toLocaleDateString('es-AR') },
+    {
+      header: 'Campo',
+      cell: (r) => <span className="font-medium text-gray-900 dark:text-gray-100">{r.campo.nombre}</span>,
+    },
+    { header: 'Cultivo', cell: (r) => r.cultivo.nombre },
+    { header: 'Campaña', cell: (r) => r.campania.nombre },
+    {
+      header: 'Producción',
+      cell: (r) => `${r.produccion.toLocaleString('es-AR')} ${r.unidad === 'KG' ? 'kg' : 't'}`,
+    },
+    { header: 'Rinde/ha', cell: (r) => r.rendimientoHa.toLocaleString('es-AR', { maximumFractionDigits: 2 }) },
+    {
+      header: 'Rentabilidad',
+      cell: (r) => (
+        <Badge tone={r.rentabilidad >= 0 ? 'green' : 'red'}>$ {r.rentabilidad.toLocaleString('es-AR')}</Badge>
+      ),
+    },
+    ...(canDelete
+      ? [
+          {
+            header: '',
+            actions: true,
+            cell: (r: Rendimiento) => (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (confirm('¿Eliminar este registro de rendimiento?')) deleteMutation.mutate(r.id);
+                }}
+              >
+                <TrashIcon className="h-4 w-4 text-red-500" />
+              </Button>
+            ),
+          } as ResponsiveTableColumn<Rendimiento>,
+        ]
+      : []),
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -100,57 +141,7 @@ export const RendimientosPage = () => {
           />
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Fecha</th>
-                    <th className="px-4 py-3 font-medium">Campo</th>
-                    <th className="px-4 py-3 font-medium">Cultivo</th>
-                    <th className="px-4 py-3 font-medium">Campaña</th>
-                    <th className="px-4 py-3 font-medium">Producción</th>
-                    <th className="px-4 py-3 font-medium">Rinde/ha</th>
-                    <th className="px-4 py-3 font-medium">Rentabilidad</th>
-                    {canDelete && <th className="px-4 py-3" />}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {data.data.map((r) => (
-                    <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                        {new Date(r.fecha).toLocaleDateString('es-AR')}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{r.campo.nombre}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{r.cultivo.nombre}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{r.campania.nombre}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                        {r.produccion.toLocaleString('es-AR')} {r.unidad === 'KG' ? 'kg' : 't'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                        {r.rendimientoHa.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge tone={r.rentabilidad >= 0 ? 'green' : 'red'}>
-                          $ {r.rentabilidad.toLocaleString('es-AR')}
-                        </Badge>
-                      </td>
-                      {canDelete && (
-                        <td className="px-4 py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            onClick={() => {
-                              if (confirm('¿Eliminar este registro de rendimiento?')) deleteMutation.mutate(r.id);
-                            }}
-                          >
-                            <TrashIcon className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ResponsiveTable data={data.data} rowKey={(r) => r.id} columns={columns} />
 
             <div className="mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
               <span>

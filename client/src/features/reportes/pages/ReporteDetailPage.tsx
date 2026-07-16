@@ -9,6 +9,7 @@ import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { FullPageSpinner } from '@/components/Spinner';
+import { ResponsiveTable, ResponsiveTableColumn } from '@/components/ResponsiveTable';
 import { getErrorMessage } from '@/lib/errors';
 import { REPORTE_LABEL, REPORTES_CON_RANGO_OBLIGATORIO, REPORTES_SIN_FECHA, TipoReporte } from '@/types/reportes';
 
@@ -43,6 +44,12 @@ export const ReporteDetailPage = () => {
     queryFn: () => reportesApi.generar(tipoReporte, { desde: desde || undefined, hasta: hasta || undefined }),
     enabled: !rangoObligatorio || (Boolean(desde) && Boolean(hasta)),
   });
+
+  const columns: ResponsiveTableColumn<Record<string, unknown>>[] =
+    data?.columns.map((col) => ({
+      header: col.header,
+      cell: (row) => formatCell(col.key, row[col.key]),
+    })) ?? [];
 
   const handleExport = async (formato: 'csv' | 'excel' | 'pdf') => {
     setExportando(formato);
@@ -91,36 +98,15 @@ export const ReporteDetailPage = () => {
         </div>
       </div>
 
-      <Card className="overflow-x-auto p-0">
+      <Card className="p-3 sm:p-0">
         {isLoading ? (
           <FullPageSpinner />
         ) : !data || data.rows.length === 0 ? (
-          <div className="p-6">
+          <div className="p-3 sm:p-6">
             <EmptyState title="Sin datos para mostrar" description="Probá ajustar el rango de fechas." />
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-              <tr>
-                {data.columns.map((col) => (
-                  <th key={col.key} className="whitespace-nowrap px-4 py-3 font-medium">
-                    {col.header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {data.rows.map((row, index) => (
-                <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  {data.columns.map((col) => (
-                    <td key={col.key} className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-300">
-                      {formatCell(col.key, row[col.key])}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ResponsiveTable data={data.rows} rowKey={(_, index) => String(index)} columns={columns} />
         )}
       </Card>
     </div>

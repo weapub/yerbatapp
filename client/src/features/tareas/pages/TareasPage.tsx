@@ -12,6 +12,7 @@ import { Card } from '@/components/Card';
 import { Select } from '@/components/Select';
 import { EmptyState } from '@/components/EmptyState';
 import { FullPageSpinner } from '@/components/Spinner';
+import { ResponsiveTable, ResponsiveTableColumn } from '@/components/ResponsiveTable';
 import { getErrorMessage } from '@/lib/errors';
 import { useAuthStore } from '@/store/auth.store';
 import { EstadoTarea, PrioridadTarea, Tarea, TIPO_TAREA_LABEL } from '@/types/tareas';
@@ -69,6 +70,46 @@ export const TareasPage = () => {
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   });
+
+  const columns: ResponsiveTableColumn<Tarea>[] = [
+    { header: 'Semáforo', cell: (tarea) => <SemaforoBadge semaforo={tarea.semaforo} /> },
+    {
+      header: 'Tipo',
+      cell: (tarea) => (
+        <span className="font-medium text-gray-900 dark:text-gray-100">{TIPO_TAREA_LABEL[tarea.tipo]}</span>
+      ),
+    },
+    {
+      header: 'Campo',
+      cell: (tarea) => `${tarea.campo.nombre}${tarea.cultivo ? ` · ${tarea.cultivo.nombre}` : ''}`,
+    },
+    { header: 'Responsable', cell: (tarea) => tarea.responsable.nombre },
+    { header: 'Programada', cell: (tarea) => new Date(tarea.fechaProgramada).toLocaleDateString('es-AR') },
+    { header: 'Estado', cell: (tarea) => tarea.estado },
+    {
+      header: '',
+      actions: true,
+      cell: (tarea) => (
+        <div className="flex justify-end gap-1">
+          {tarea.estado !== 'COMPLETADA' && tarea.estado !== 'CANCELADA' && (
+            <Button variant="ghost" onClick={() => completarMutation.mutate(tarea.id)} title="Marcar como realizada">
+              <CheckIcon className="h-4 w-4 text-brand-600" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (confirm('¿Eliminar esta tarea?')) deleteMutation.mutate(tarea.id);
+              }}
+            >
+              <TrashIcon className="h-4 w-4 text-red-500" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -212,64 +253,7 @@ export const TareasPage = () => {
               <EmptyState icon={<ClipboardDocumentListIcon className="h-10 w-10" />} title="No hay tareas con estos filtros" />
             ) : (
               <>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-                      <tr>
-                        <th className="px-4 py-3 font-medium">Semáforo</th>
-                        <th className="px-4 py-3 font-medium">Tipo</th>
-                        <th className="px-4 py-3 font-medium">Campo</th>
-                        <th className="px-4 py-3 font-medium">Responsable</th>
-                        <th className="px-4 py-3 font-medium">Programada</th>
-                        <th className="px-4 py-3 font-medium">Estado</th>
-                        <th className="px-4 py-3" />
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                      {data.data.map((tarea) => (
-                        <tr key={tarea.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                          <td className="px-4 py-3">
-                            <SemaforoBadge semaforo={tarea.semaforo} />
-                          </td>
-                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                            {TIPO_TAREA_LABEL[tarea.tipo]}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                            {tarea.campo.nombre} {tarea.cultivo && `· ${tarea.cultivo.nombre}`}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{tarea.responsable.nombre}</td>
-                          <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                            {new Date(tarea.fechaProgramada).toLocaleDateString('es-AR')}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{tarea.estado}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex justify-end gap-1">
-                              {tarea.estado !== 'COMPLETADA' && tarea.estado !== 'CANCELADA' && (
-                                <Button
-                                  variant="ghost"
-                                  onClick={() => completarMutation.mutate(tarea.id)}
-                                  title="Marcar como realizada"
-                                >
-                                  <CheckIcon className="h-4 w-4 text-brand-600" />
-                                </Button>
-                              )}
-                              {canDelete && (
-                                <Button
-                                  variant="ghost"
-                                  onClick={() => {
-                                    if (confirm('¿Eliminar esta tarea?')) deleteMutation.mutate(tarea.id);
-                                  }}
-                                >
-                                  <TrashIcon className="h-4 w-4 text-red-500" />
-                                </Button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ResponsiveTable data={data.data} rowKey={(tarea) => tarea.id} columns={columns} />
 
                 <div className="mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                   <span>

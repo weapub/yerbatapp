@@ -12,8 +12,10 @@ import { Badge } from '@/components/Badge';
 import { EmptyState } from '@/components/EmptyState';
 import { FullPageSpinner } from '@/components/Spinner';
 import { CuentaCorrientePanel } from '@/components/CuentaCorrientePanel';
+import { ResponsiveTable, ResponsiveTableColumn } from '@/components/ResponsiveTable';
 import { getErrorMessage } from '@/lib/errors';
 import { useAuthStore } from '@/store/auth.store';
+import { HistorialAplicacion } from '@/types/insumos';
 
 export const ProveedorDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,6 +54,22 @@ export const ProveedorDetailPage = () => {
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   });
+
+  const historialColumns: ResponsiveTableColumn<HistorialAplicacion>[] = [
+    { header: 'Fecha', cell: (h) => new Date(h.fecha).toLocaleDateString('es-AR') },
+    {
+      header: 'Producto',
+      cell: (h) => (
+        <span className="font-medium text-gray-900 dark:text-gray-100">
+          {h.producto} {h.marca && `(${h.marca})`}
+        </span>
+      ),
+    },
+    { header: 'Campo', cell: (h) => h.campo },
+    { header: 'Cultivo', cell: (h) => h.cultivo },
+    { header: 'Cantidad', cell: (h) => h.cantidadUtilizada.toLocaleString('es-AR') },
+    { header: 'Costo', cell: (h) => `$ ${h.costo.toLocaleString('es-AR')}` },
+  ];
 
   if (isLoading || !proveedor) return <FullPageSpinner />;
 
@@ -120,40 +138,7 @@ export const ProveedorDetailPage = () => {
         ) : !historial || historial.length === 0 ? (
           <EmptyState title="Sin historial todavía" description="Se muestran las aplicaciones registradas con productos de este proveedor." />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Fecha</th>
-                  <th className="px-4 py-3 font-medium">Producto</th>
-                  <th className="px-4 py-3 font-medium">Campo</th>
-                  <th className="px-4 py-3 font-medium">Cultivo</th>
-                  <th className="px-4 py-3 font-medium">Cantidad</th>
-                  <th className="px-4 py-3 font-medium">Costo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {historial.map((h) => (
-                  <tr key={h.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                      {new Date(h.fecha).toLocaleDateString('es-AR')}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                      {h.producto} {h.marca && `(${h.marca})`}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{h.campo}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{h.cultivo}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                      {h.cantidadUtilizada.toLocaleString('es-AR')}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                      $ {h.costo.toLocaleString('es-AR')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ResponsiveTable data={historial} rowKey={(h) => h.id} columns={historialColumns} />
         )}
       </Card>
 

@@ -9,6 +9,7 @@ import { Select } from '@/components/Select';
 import { EmptyState } from '@/components/EmptyState';
 import { FullPageSpinner } from '@/components/Spinner';
 import { Button } from '@/components/Button';
+import { ResponsiveTable, ResponsiveTableColumn } from '@/components/ResponsiveTable';
 import { Cultivo } from '@/types/campos';
 
 const ESTADO_TONE: Record<Cultivo['estadoSanitario'], 'green' | 'yellow' | 'red'> = {
@@ -26,6 +27,31 @@ export const CultivosListPage = () => {
     queryKey: ['cultivos', { page, estadoSanitario }],
     queryFn: () => cultivosApi.list({ page, pageSize: 15, estadoSanitario: estadoSanitario || undefined }),
   });
+
+  const columns: ResponsiveTableColumn<Cultivo>[] = [
+    {
+      header: 'Nombre',
+      cell: (cultivo) => <span className="font-medium text-gray-900 dark:text-gray-100">{cultivo.nombre}</span>,
+    },
+    {
+      header: 'Campo',
+      cell: (cultivo) =>
+        cultivo.campo && (
+          <Link to={`/campos/${cultivo.campo.id}`} className="text-brand-700 hover:underline dark:text-brand-300">
+            {cultivo.campo.nombre}
+          </Link>
+        ),
+    },
+    {
+      header: 'Plantación',
+      cell: (cultivo) => new Date(cultivo.fechaPlantacion).toLocaleDateString('es-AR'),
+    },
+    { header: 'Plantas', cell: (cultivo) => cultivo.cantidadPlantas.toLocaleString('es-AR') },
+    {
+      header: 'Estado sanitario',
+      cell: (cultivo) => <Badge tone={ESTADO_TONE[cultivo.estadoSanitario]}>{cultivo.estadoSanitario}</Badge>,
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -59,44 +85,8 @@ export const CultivosListPage = () => {
         />
       ) : (
         <>
-          <Card className="overflow-x-auto p-0">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Nombre</th>
-                  <th className="px-4 py-3 font-medium">Campo</th>
-                  <th className="px-4 py-3 font-medium">Plantación</th>
-                  <th className="px-4 py-3 font-medium">Plantas</th>
-                  <th className="px-4 py-3 font-medium">Estado sanitario</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {data.data.map((cultivo) => (
-                  <tr key={cultivo.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{cultivo.nombre}</td>
-                    <td className="px-4 py-3">
-                      {cultivo.campo && (
-                        <Link
-                          to={`/campos/${cultivo.campo.id}`}
-                          className="text-brand-700 hover:underline dark:text-brand-300"
-                        >
-                          {cultivo.campo.nombre}
-                        </Link>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                      {new Date(cultivo.fechaPlantacion).toLocaleDateString('es-AR')}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                      {cultivo.cantidadPlantas.toLocaleString('es-AR')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge tone={ESTADO_TONE[cultivo.estadoSanitario]}>{cultivo.estadoSanitario}</Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <Card className="p-3 sm:p-0">
+            <ResponsiveTable data={data.data} rowKey={(cultivo) => cultivo.id} columns={columns} />
           </Card>
 
           <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">

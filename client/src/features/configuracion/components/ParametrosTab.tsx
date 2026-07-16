@@ -11,8 +11,10 @@ import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { Spinner } from '@/components/Spinner';
+import { ResponsiveTable, ResponsiveTableColumn } from '@/components/ResponsiveTable';
 import { getErrorMessage } from '@/lib/errors';
 import { useAuthStore } from '@/store/auth.store';
+import { ParametroSistema } from '@/types/configuracion';
 
 const schema = z.object({
   clave: z.string().min(1, 'Requerido'),
@@ -60,6 +62,29 @@ export const ParametrosTab = () => {
     onError: (error) => toast.error(getErrorMessage(error)),
   });
 
+  const columns: ResponsiveTableColumn<ParametroSistema>[] = [
+    { header: 'Clave', cell: (p) => <span className="font-mono text-xs">{p.clave}</span> },
+    { header: 'Valor', cell: (p) => p.valor },
+    ...(canManage
+      ? [
+          {
+            header: '',
+            actions: true,
+            cell: (p: ParametroSistema) => (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (confirm(`¿Eliminar el parámetro "${p.clave}"?`)) deleteMutation.mutate(p.clave);
+                }}
+              >
+                <TrashIcon className="h-4 w-4 text-red-500" />
+              </Button>
+            ),
+          } as ResponsiveTableColumn<ParametroSistema>,
+        ]
+      : []),
+  ];
+
   return (
     <div className="flex flex-col gap-4">
       {canManage && (
@@ -93,37 +118,7 @@ export const ParametrosTab = () => {
         ) : !data || data.length === 0 ? (
           <EmptyState title="Sin parámetros configurados" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Clave</th>
-                  <th className="px-4 py-3 font-medium">Valor</th>
-                  {canManage && <th className="px-4 py-3" />}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {data.map((p) => (
-                  <tr key={p.id}>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-900 dark:text-gray-100">{p.clave}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{p.valor}</td>
-                    {canManage && (
-                      <td className="px-4 py-3 text-right">
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            if (confirm(`¿Eliminar el parámetro "${p.clave}"?`)) deleteMutation.mutate(p.clave);
-                          }}
-                        >
-                          <TrashIcon className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ResponsiveTable data={data} rowKey={(p) => p.id} columns={columns} />
         )}
       </Card>
     </div>

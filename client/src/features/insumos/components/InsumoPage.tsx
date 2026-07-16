@@ -9,9 +9,10 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { FullPageSpinner } from '@/components/Spinner';
+import { ResponsiveTable, ResponsiveTableColumn } from '@/components/ResponsiveTable';
 import { getErrorMessage } from '@/lib/errors';
 import { useAuthStore } from '@/store/auth.store';
-import { TipoInsumo } from '@/types/insumos';
+import { AplicacionInsumo, TipoInsumo } from '@/types/insumos';
 
 interface InsumoPageProps {
   tipo: TipoInsumo;
@@ -41,6 +42,38 @@ export const InsumoPage = ({ tipo, title, subtitle }: InsumoPageProps) => {
     onError: (error) => toast.error(getErrorMessage(error)),
   });
 
+  const columns: ResponsiveTableColumn<AplicacionInsumo>[] = [
+    { header: 'Fecha', cell: (a) => new Date(a.fecha).toLocaleDateString('es-AR') },
+    {
+      header: 'Campo',
+      cell: (a) => <span className="font-medium text-gray-900 dark:text-gray-100">{a.campo.nombre}</span>,
+    },
+    { header: 'Cultivo', cell: (a) => a.cultivo.nombre },
+    { header: 'Producto', cell: (a) => `${a.producto.nombre}${a.producto.marca ? ` (${a.producto.marca})` : ''}` },
+    { header: 'Proveedor', cell: (a) => a.proveedor.empresa },
+    { header: 'Dosis/ha', cell: (a) => a.dosisHa },
+    { header: 'Costo', cell: (a) => `$ ${a.costo.toLocaleString('es-AR')}` },
+    { header: 'Aplicador', cell: (a) => a.aplicador.nombre },
+    ...(canDelete
+      ? [
+          {
+            header: '',
+            actions: true,
+            cell: (a: AplicacionInsumo) => (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (confirm('¿Eliminar esta aplicación?')) deleteMutation.mutate(a.id);
+                }}
+              >
+                <TrashIcon className="h-4 w-4 text-red-500" />
+              </Button>
+            ),
+          } as ResponsiveTableColumn<AplicacionInsumo>,
+        ]
+      : []),
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -68,55 +101,7 @@ export const InsumoPage = ({ tipo, title, subtitle }: InsumoPageProps) => {
           />
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Fecha</th>
-                    <th className="px-4 py-3 font-medium">Campo</th>
-                    <th className="px-4 py-3 font-medium">Cultivo</th>
-                    <th className="px-4 py-3 font-medium">Producto</th>
-                    <th className="px-4 py-3 font-medium">Proveedor</th>
-                    <th className="px-4 py-3 font-medium">Dosis/ha</th>
-                    <th className="px-4 py-3 font-medium">Costo</th>
-                    <th className="px-4 py-3 font-medium">Aplicador</th>
-                    {canDelete && <th className="px-4 py-3" />}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {data.data.map((a) => (
-                    <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                        {new Date(a.fecha).toLocaleDateString('es-AR')}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{a.campo.nombre}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{a.cultivo.nombre}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                        {a.producto.nombre} {a.producto.marca && `(${a.producto.marca})`}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{a.proveedor.empresa}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{a.dosisHa}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                        $ {a.costo.toLocaleString('es-AR')}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{a.aplicador.nombre}</td>
-                      {canDelete && (
-                        <td className="px-4 py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            onClick={() => {
-                              if (confirm('¿Eliminar esta aplicación?')) deleteMutation.mutate(a.id);
-                            }}
-                          >
-                            <TrashIcon className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ResponsiveTable data={data.data} rowKey={(a) => a.id} columns={columns} />
 
             <div className="mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
               <span>

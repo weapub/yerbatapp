@@ -9,8 +9,10 @@ import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { EmptyState } from '@/components/EmptyState';
 import { FullPageSpinner } from '@/components/Spinner';
+import { ResponsiveTable, ResponsiveTableColumn } from '@/components/ResponsiveTable';
 import { getErrorMessage } from '@/lib/errors';
 import { useAuthStore } from '@/store/auth.store';
+import { SafeUser } from '@/types/auth';
 
 export const UsersPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -27,6 +29,36 @@ export const UsersPage = () => {
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   });
+
+  const columns: ResponsiveTableColumn<SafeUser>[] = [
+    { header: 'Nombre', cell: (user) => <span className="font-medium text-gray-900 dark:text-gray-100">{user.nombre}</span> },
+    { header: 'Email', cell: (user) => user.email },
+    { header: 'Rol', cell: (user) => <Badge tone="gray">{user.rol}</Badge> },
+    {
+      header: 'Último acceso',
+      cell: (user) => (user.ultimoAcceso ? new Date(user.ultimoAcceso).toLocaleString('es-AR') : 'Nunca'),
+    },
+    {
+      header: 'Estado',
+      cell: (user) => <Badge tone={user.activo ? 'green' : 'red'}>{user.activo ? 'Activo' : 'Inactivo'}</Badge>,
+    },
+    {
+      header: '',
+      actions: true,
+      cell: (user) =>
+        user.activo &&
+        user.id !== currentUserId && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              if (confirm(`¿Desactivar a ${user.nombre}?`)) deactivateMutation.mutate(user.id);
+            }}
+          >
+            Desactivar
+          </Button>
+        ),
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,48 +77,8 @@ export const UsersPage = () => {
       ) : !users || users.length === 0 ? (
         <EmptyState icon={<UsersIcon className="h-10 w-10" />} title="No hay usuarios cargados" />
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-              <tr>
-                <th className="px-4 py-3 font-medium">Nombre</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Rol</th>
-                <th className="px-4 py-3 font-medium">Último acceso</th>
-                <th className="px-4 py-3 font-medium">Estado</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{user.nombre}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{user.email}</td>
-                  <td className="px-4 py-3">
-                    <Badge tone="gray">{user.rol}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                    {user.ultimoAcceso ? new Date(user.ultimoAcceso).toLocaleString('es-AR') : 'Nunca'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge tone={user.activo ? 'green' : 'red'}>{user.activo ? 'Activo' : 'Inactivo'}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {user.activo && user.id !== currentUserId && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          if (confirm(`¿Desactivar a ${user.nombre}?`)) deactivateMutation.mutate(user.id);
-                        }}
-                      >
-                        Desactivar
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <Card className="p-3 sm:p-0">
+          <ResponsiveTable data={users} rowKey={(user) => user.id} columns={columns} />
         </Card>
       )}
 

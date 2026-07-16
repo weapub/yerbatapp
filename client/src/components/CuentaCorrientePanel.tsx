@@ -13,6 +13,7 @@ import { Select } from './Select';
 import { Textarea } from './Textarea';
 import { EmptyState } from './EmptyState';
 import { Spinner } from './Spinner';
+import { ResponsiveTable, ResponsiveTableColumn } from './ResponsiveTable';
 import { getErrorMessage } from '@/lib/errors';
 
 interface MovimientoCC {
@@ -83,6 +84,24 @@ export function CuentaCorrientePanel<TTipo extends string>({
     onError: (error) => toast.error(getErrorMessage(error)),
   });
 
+  const columns: ResponsiveTableColumn<MovimientoCC>[] = [
+    { header: 'Fecha', cell: (m) => new Date(m.fecha).toLocaleDateString('es-AR') },
+    {
+      header: 'Tipo',
+      cell: (m) => (
+        <Badge tone={m.monto >= 0 ? 'red' : 'green'}>{m.monto >= 0 ? tipoPositivoLabel : tipoNegativoLabel}</Badge>
+      ),
+    },
+    { header: 'Descripción', cell: (m) => m.descripcion ?? '—' },
+    { header: 'Monto', cell: (m) => `$ ${Math.abs(m.monto).toLocaleString('es-AR')}` },
+    {
+      header: 'Saldo',
+      cell: (m) => (
+        <span className="font-medium text-gray-900 dark:text-gray-100">$ {m.saldo.toLocaleString('es-AR')}</span>
+      ),
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
       <Card className="flex items-center justify-between">
@@ -128,40 +147,7 @@ export function CuentaCorrientePanel<TTipo extends string>({
         ) : !movimientos || movimientos.length === 0 ? (
           <EmptyState title="Sin movimientos registrados" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Fecha</th>
-                  <th className="px-4 py-3 font-medium">Tipo</th>
-                  <th className="px-4 py-3 font-medium">Descripción</th>
-                  <th className="px-4 py-3 font-medium">Monto</th>
-                  <th className="px-4 py-3 font-medium">Saldo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {movimientos.map((m) => (
-                  <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                      {new Date(m.fecha).toLocaleDateString('es-AR')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge tone={m.monto >= 0 ? 'red' : 'green'}>
-                        {m.monto >= 0 ? tipoPositivoLabel : tipoNegativoLabel}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{m.descripcion ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                      $ {Math.abs(m.monto).toLocaleString('es-AR')}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                      $ {m.saldo.toLocaleString('es-AR')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ResponsiveTable data={movimientos} rowKey={(m) => m.id} columns={columns} />
         )}
       </Card>
     </div>

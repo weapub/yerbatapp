@@ -8,7 +8,9 @@ import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { FullPageSpinner } from '@/components/Spinner';
+import { ResponsiveTable, ResponsiveTableColumn } from '@/components/ResponsiveTable';
 import { getErrorMessage } from '@/lib/errors';
+import { IvaPeriodo } from '@/types/facturas';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const toDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -24,6 +26,18 @@ export const PanelIvaPage = () => {
     queryKey: ['facturas', 'iva', desde, hasta],
     queryFn: () => facturasApi.panelIva(desde, hasta),
   });
+
+  const columns: ResponsiveTableColumn<IvaPeriodo>[] = [
+    { header: 'Período', cell: (p) => <span className="font-medium text-gray-900 dark:text-gray-100">{p.periodo}</span> },
+    { header: 'IVA Ventas', cell: (p) => `$ ${p.ivaVentas.toLocaleString('es-AR')}` },
+    { header: 'IVA Compras', cell: (p) => `$ ${p.ivaCompras.toLocaleString('es-AR')}` },
+    { header: 'Débito Fiscal', cell: (p) => `$ ${p.debitoFiscal.toLocaleString('es-AR')}` },
+    { header: 'Crédito Fiscal', cell: (p) => `$ ${p.creditoFiscal.toLocaleString('es-AR')}` },
+    {
+      header: 'Saldo Técnico',
+      cell: (p) => <span className="font-medium text-gray-900 dark:text-gray-100">$ {p.saldoTecnico.toLocaleString('es-AR')}</span>,
+    },
+  ];
 
   const handleExport = async (formato: 'excel' | 'pdf') => {
     setExportando(formato);
@@ -101,34 +115,7 @@ export const PanelIvaPage = () => {
 
           <Card>
             <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Totales mensuales</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Período</th>
-                    <th className="px-4 py-3 font-medium">IVA Ventas</th>
-                    <th className="px-4 py-3 font-medium">IVA Compras</th>
-                    <th className="px-4 py-3 font-medium">Débito Fiscal</th>
-                    <th className="px-4 py-3 font-medium">Crédito Fiscal</th>
-                    <th className="px-4 py-3 font-medium">Saldo Técnico</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {data.porMes.map((p) => (
-                    <tr key={p.periodo}>
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{p.periodo}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">$ {p.ivaVentas.toLocaleString('es-AR')}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">$ {p.ivaCompras.toLocaleString('es-AR')}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">$ {p.debitoFiscal.toLocaleString('es-AR')}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">$ {p.creditoFiscal.toLocaleString('es-AR')}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                        $ {p.saldoTecnico.toLocaleString('es-AR')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ResponsiveTable data={data.porMes} rowKey={(p) => p.periodo} columns={columns} />
           </Card>
         </>
       )}
