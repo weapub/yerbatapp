@@ -22,7 +22,7 @@ const prisma = new PrismaClient();
 
 const TENANT_NAME = process.env.DEFAULT_TENANT_NAME ?? 'Yerbatera Demo S.A.';
 const ADMIN_EMAIL = process.env.DEFAULT_ADMIN_EMAIL ?? 'admin@yerbatapp.com';
-const ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD ?? 'Admin123!';
+const ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD ?? 'Admin1234';
 const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS ?? 12);
 
 // IDs deterministas (grupo "0001") para que el seed sea idempotente y no
