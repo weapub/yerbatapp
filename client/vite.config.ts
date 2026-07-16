@@ -50,6 +50,22 @@ export default defineConfig({
               expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
+          {
+            // Google Fonts: la hoja de estilos puede cambiar (nuevos pesos/subsets).
+            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'google-fonts-stylesheets' },
+          },
+          {
+            // Archivos de fuente en sí: inmutables una vez publicados.
+            urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
         ],
       },
     }),
