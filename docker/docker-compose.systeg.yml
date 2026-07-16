@@ -1,0 +1,51 @@
+# Variante de despliegue para el VPS compartido "systeg" (srv1732938.hstgr.cloud).
+# A diferencia de docker-compose.prod.yml (que trae su propio nginx+certbot),
+# este archivo se integra al nginx central del proyecto "deploy" ya corriendo
+# en ese VPS: no publica puertos, se conecta a la red externa "systeg", y
+# sigue el mismo naming que los demás clientes (db-<slug> / api-<slug>).
+#
+# Requiere que ya exista la red "systeg" (la crea el proyecto "deploy") y que
+# se haya dado de alta el vhost correspondiente vía add-client.sh.
+#
+# Ejecutar desde la raíz del repo:
+#   docker compose -f docker/docker-compose.systeg.yml up -d --build
+
+services:
+  db-yerbatapp:
+    image: postgres:16-alpine
+    container_name: db-yerbatapp
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: yerbatapp
+      POSTGRES_USER: yerbatapp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requerido}
+    volumes:
+      - /opt/systeg/data/yerbatapp/pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U yerbatapp']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [systeg]
+
+  api-yerbatapp:
+    build:
+      context: ..
+      dockerfile: docker/server.Dockerfile
+    container_name: api-yerbatapp
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql://yerbatapp:${POSTGRES_PASSWORD}@db-yerbatapp:5432/yerbatapp?schema=public
+    depends_on:
+      db-yerbatapp:
+        condition: service_healthy
+    volumes:
+      - /opt/systeg/data/yerbatapp/uploads:/app/uploads
+      - /opt/systeg/data/yerbatapp/backups:/app/backups
+    networks: [systeg]
+
+networks:
+  systeg:
+    external: true
+    name: systeg

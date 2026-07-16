@@ -1,0 +1,25 @@
+# Docker Compose de DESARROLLO. Solo levanta Postgres (el server y el client
+# corren nativos vía `npm run dev` para hot-reload rápido). Ejecutar desde la
+# raíz del repo: `docker compose -f docker/docker-compose.yml up -d postgres`.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: yerbatapp-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: yerbatapp
+      POSTGRES_PASSWORD: yerbatapp
+      POSTGRES_DB: yerbatapp
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U yerbatapp']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_dev_data:

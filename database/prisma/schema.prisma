@@ -1,0 +1,704 @@
+// YerbatApp — Schema Prisma
+// Base de datos normalizada, preparada para multi-tenant (columna tenantId
+// en cada entidad raíz) y para migrar a Supabase sin cambios de código
+// (solo variables de entorno DATABASE_URL / DIRECT_URL).
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ════════════════════════════════════════════════════════════
+// Enums
+// ════════════════════════════════════════════════════════════
+
+enum RolUsuario {
+  ADMIN
+  SUPERVISOR
+  EMPLEADO
+}
+
+enum EstadoCampo {
+  ACTIVO
+  INACTIVO
+}
+
+enum EstadoSanitario {
+  EXCELENTE
+  BUENO
+  REGULAR
+  MALO
+}
+
+enum TipoInsumo {
+  FERTILIZANTE
+  HERBICIDA
+}
+
+enum UnidadProduccion {
+  KG
+  TONELADA
+}
+
+enum TipoTarea {
+  DESMALEZADO
+  APLICACION_HERBICIDA
+  APLICACION_FERTILIZANTE
+  PODA
+  CONTROL_PLAGAS
+  LIMPIEZA
+  COSECHA
+  MANTENIMIENTO
+  REPARACIONES
+  RIEGO
+  FERTILIZACION
+  CONTROL_SANITARIO
+  OTRO
+}
+
+enum EstadoTarea {
+  PENDIENTE
+  EN_PROGRESO
+  COMPLETADA
+  CANCELADA
+}
+
+enum PrioridadTarea {
+  BAJA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum TipoCuentaFinanciera {
+  CAJA
+  BANCO
+}
+
+enum TipoMovimientoFinanciero {
+  INGRESO
+  EGRESO
+}
+
+enum TipoFactura {
+  A
+  B
+  C
+}
+
+enum TipoOperacionFactura {
+  VENTA
+  COMPRA
+}
+
+enum EstadoFactura {
+  PENDIENTE
+  PAGADA
+  VENCIDA
+  ANULADA
+}
+
+enum TipoNotificacion {
+  VENCIMIENTO_FACTURA
+  VENCIMIENTO_TAREA
+  APLICACION_AGRICOLA
+  STOCK_BAJO
+  SISTEMA
+}
+
+enum TipoBackup {
+  AUTOMATICO
+  MANUAL
+}
+
+enum EstadoBackup {
+  EN_PROGRESO
+  COMPLETADO
+  FALLIDO
+}
+
+// ════════════════════════════════════════════════════════════
+// Core / Tenancy / Auth
+// ════════════════════════════════════════════════════════════
+
+model Tenant {
+  id             String          @id @default(uuid())
+  nombre         String
+  razonSocial    String?
+  cuit           String?
+  logoUrl        String?
+  activo         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  users          User[]
+  campos         Campo[]
+  campanias      Campania[]
+  clientes       Cliente[]
+  proveedores    Proveedor[]
+  facturas       Factura[]
+  cuentas        CuentaFinanciera[]
+  categoriasFinancieras CategoriaFinanciera[]
+  centrosCosto   CentroCosto[]
+  tareas         Tarea[]
+  notificaciones Notificacion[]
+  empresaConfig  EmpresaConfig?
+  backups        BackupLog[]
+  parametros     ParametroSistema[]
+}
+
+model User {
+  id              String    @id @default(uuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  nombre          String
+  email           String    @unique
+  passwordHash    String
+  rol             RolUsuario @default(EMPLEADO)
+  activo          Boolean   @default(true)
+  ultimoAcceso    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  refreshTokens   RefreshToken[]
+  resetTokens     PasswordResetToken[]
+  activityLogs    ActivityLog[]
+  loginHistory    LoginHistory[]
+  camposResponsable Campo[]        @relation("CampoResponsable")
+  notasCreadas    CampoNota[]
+  tareasAsignadas Tarea[]          @relation("TareaResponsable")
+  aplicaciones    AplicacionInsumo[]
+  notificaciones  Notificacion[]
+
+  @@index([tenantId])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model LoginHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  exitoso   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  entidad   String
+  entidadId String
+  accion    String
+  cambios   Json?
+  createdAt DateTime @default(now())
+
+  @@index([entidad, entidadId])
+  @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════
+// Campos / Cultivos
+// ════════════════════════════════════════════════════════════
+
+model Campo {
+  id            String      @id @default(uuid())
+  tenantId      String
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  nombre        String
+  ubicacion     String
+  superficieHa  Decimal     @db.Decimal(10, 2)
+  latitud       Decimal?    @db.Decimal(9, 6)
+  longitud      Decimal?    @db.Decimal(9, 6)
+  responsableId String?
+  responsable   User?       @relation("CampoResponsable", fields: [responsableId], references: [id])
+  estado        EstadoCampo @default(ACTIVO)
+  observaciones String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  cultivos      Cultivo[]
+  notas         CampoNota[]
+  documentos    CampoDocumento[]
+  fotos         CampoFoto[]
+  tareas        Tarea[]
+  aplicaciones  AplicacionInsumo[]
+  rendimientos  Rendimiento[]
+
+  @@index([tenantId])
+}
+
+model CampoNota {
+  id          String   @id @default(uuid())
+  campoId     String
+  campo       Campo    @relation(fields: [campoId], references: [id], onDelete: Cascade)
+  usuarioId   String
+  usuario     User     @relation(fields: [usuarioId], references: [id])
+  titulo      String
+  descripcion String
+  createdAt   DateTime @default(now())
+
+  adjuntos    CampoNotaAdjunto[]
+
+  @@index([campoId])
+}
+
+model CampoNotaAdjunto {
+  id            String    @id @default(uuid())
+  notaId        String
+  nota          CampoNota @relation(fields: [notaId], references: [id], onDelete: Cascade)
+  url           String
+  nombreArchivo String
+  mimeType      String
+  createdAt     DateTime  @default(now())
+
+  @@index([notaId])
+}
+
+model CampoDocumento {
+  id        String   @id @default(uuid())
+  campoId   String
+  campo     Campo    @relation(fields: [campoId], references: [id], onDelete: Cascade)
+  url       String
+  nombre    String
+  mimeType  String
+  createdAt DateTime @default(now())
+
+  @@index([campoId])
+}
+
+model CampoFoto {
+  id          String   @id @default(uuid())
+  campoId     String
+  campo       Campo    @relation(fields: [campoId], references: [id], onDelete: Cascade)
+  url         String
+  descripcion String?
+  createdAt   DateTime @default(now())
+
+  @@index([campoId])
+}
+
+model Cultivo {
+  id                   String          @id @default(uuid())
+  campoId              String
+  campo                Campo           @relation(fields: [campoId], references: [id], onDelete: Cascade)
+  nombre               String
+  variedad             String?
+  fechaPlantacion      DateTime
+  cantidadPlantas      Int
+  estadoSanitario      EstadoSanitario @default(BUENO)
+  produccionEsperadaKg Decimal?        @db.Decimal(12, 2)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  historial            CultivoHistorial[]
+  rendimientos         Rendimiento[]
+  aplicaciones         AplicacionInsumo[]
+  tareas               Tarea[]
+
+  @@index([campoId])
+}
+
+model CultivoHistorial {
+  id        String   @id @default(uuid())
+  cultivoId String
+  cultivo   Cultivo  @relation(fields: [cultivoId], references: [id], onDelete: Cascade)
+  evento    String
+  detalle   String?
+  fecha     DateTime @default(now())
+
+  @@index([cultivoId])
+}
+
+// ════════════════════════════════════════════════════════════
+// Rendimientos
+// ════════════════════════════════════════════════════════════
+
+model Campania {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  nombre      String
+  fechaInicio DateTime
+  fechaFin    DateTime
+  createdAt   DateTime @default(now())
+
+  rendimientos Rendimiento[]
+
+  @@index([tenantId])
+}
+
+model Rendimiento {
+  id            String           @id @default(uuid())
+  campoId       String
+  campo         Campo            @relation(fields: [campoId], references: [id])
+  cultivoId     String
+  cultivo       Cultivo          @relation(fields: [cultivoId], references: [id])
+  campaniaId    String
+  campania      Campania         @relation(fields: [campaniaId], references: [id])
+  fecha         DateTime
+  produccion    Decimal          @db.Decimal(12, 2)
+  unidad        UnidadProduccion @default(KG)
+  rendimientoHa Decimal          @db.Decimal(12, 2)
+  costo         Decimal          @db.Decimal(12, 2)
+  ingreso       Decimal          @db.Decimal(12, 2)
+  createdAt     DateTime         @default(now())
+
+  @@index([campoId])
+  @@index([cultivoId])
+  @@index([campaniaId])
+}
+
+// ════════════════════════════════════════════════════════════
+// Insumos (Fertilizantes / Herbicidas) y Proveedores
+// ════════════════════════════════════════════════════════════
+
+model Proveedor {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  empresa   String
+  cuit      String
+  contacto  String?
+  direccion String?
+  telefono  String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productos     Producto[]
+  aplicaciones  AplicacionInsumo[]
+  facturas      Factura[]
+  movimientosCC MovimientoCuentaCorriente[]
+
+  @@index([tenantId])
+}
+
+model Producto {
+  id          String     @id @default(uuid())
+  proveedorId String
+  proveedor   Proveedor  @relation(fields: [proveedorId], references: [id])
+  nombre      String
+  marca       String?
+  tipo        TipoInsumo
+
+  aplicaciones AplicacionInsumo[]
+
+  @@index([proveedorId])
+}
+
+model AplicacionInsumo {
+  id                String     @id @default(uuid())
+  tipo              TipoInsumo
+  campoId           String
+  campo             Campo      @relation(fields: [campoId], references: [id])
+  cultivoId         String
+  cultivo           Cultivo    @relation(fields: [cultivoId], references: [id])
+  productoId        String
+  producto          Producto   @relation(fields: [productoId], references: [id])
+  proveedorId       String
+  proveedor         Proveedor  @relation(fields: [proveedorId], references: [id])
+  fecha             DateTime
+  dosisHa           Decimal    @db.Decimal(10, 2)
+  cantidadUtilizada Decimal    @db.Decimal(10, 2)
+  costo             Decimal    @db.Decimal(12, 2)
+  aplicadorId       String
+  aplicador         User       @relation(fields: [aplicadorId], references: [id])
+  observaciones     String?
+  createdAt         DateTime   @default(now())
+
+  @@index([campoId])
+  @@index([cultivoId])
+  @@index([tipo])
+}
+
+// ════════════════════════════════════════════════════════════
+// Tareas Agrícolas
+// ════════════════════════════════════════════════════════════
+
+model Tarea {
+  id              String         @id @default(uuid())
+  tenantId        String
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  tipo            TipoTarea
+  campoId         String
+  campo           Campo          @relation(fields: [campoId], references: [id])
+  cultivoId       String?
+  cultivo         Cultivo?       @relation(fields: [cultivoId], references: [id])
+  responsableId   String
+  responsable     User           @relation("TareaResponsable", fields: [responsableId], references: [id])
+  fechaProgramada DateTime
+  fechaRealizada  DateTime?
+  estado          EstadoTarea    @default(PENDIENTE)
+  prioridad       PrioridadTarea @default(MEDIA)
+  observaciones   String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  adjuntos        TareaAdjunto[]
+
+  @@index([tenantId])
+  @@index([campoId])
+  @@index([estado])
+  @@index([fechaProgramada])
+}
+
+model TareaAdjunto {
+  id            String   @id @default(uuid())
+  tareaId       String
+  tarea         Tarea    @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+  url           String
+  nombreArchivo String
+  createdAt     DateTime @default(now())
+
+  @@index([tareaId])
+}
+
+// ════════════════════════════════════════════════════════════
+// Gestión Financiera
+// ════════════════════════════════════════════════════════════
+
+model CuentaFinanciera {
+  id           String               @id @default(uuid())
+  tenantId     String
+  tenant       Tenant               @relation(fields: [tenantId], references: [id])
+  nombre       String
+  tipo         TipoCuentaFinanciera
+  saldoInicial Decimal              @default(0) @db.Decimal(14, 2)
+  createdAt    DateTime             @default(now())
+
+  movimientos  MovimientoFinanciero[]
+
+  @@index([tenantId])
+}
+
+model CategoriaFinanciera {
+  id       String                   @id @default(uuid())
+  tenantId String
+  tenant   Tenant                   @relation(fields: [tenantId], references: [id])
+  nombre   String
+  tipo     TipoMovimientoFinanciero
+
+  movimientos MovimientoFinanciero[]
+
+  @@index([tenantId])
+}
+
+model CentroCosto {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  nombre   String
+
+  movimientos MovimientoFinanciero[]
+
+  @@index([tenantId])
+}
+
+model MovimientoFinanciero {
+  id            String                   @id @default(uuid())
+  cuentaId      String
+  cuenta        CuentaFinanciera         @relation(fields: [cuentaId], references: [id])
+  categoriaId   String
+  categoria     CategoriaFinanciera      @relation(fields: [categoriaId], references: [id])
+  centroCostoId String?
+  centroCosto   CentroCosto?             @relation(fields: [centroCostoId], references: [id])
+  tipo          TipoMovimientoFinanciero
+  monto         Decimal                  @db.Decimal(14, 2)
+  fecha         DateTime
+  descripcion   String?
+  facturaId     String?
+  factura       Factura?                 @relation(fields: [facturaId], references: [id])
+  createdAt     DateTime                 @default(now())
+
+  adjuntos      MovimientoAdjunto[]
+
+  @@index([cuentaId])
+  @@index([fecha])
+}
+
+model MovimientoAdjunto {
+  id            String               @id @default(uuid())
+  movimientoId  String
+  movimiento    MovimientoFinanciero @relation(fields: [movimientoId], references: [id], onDelete: Cascade)
+  url           String
+  nombreArchivo String
+  createdAt     DateTime             @default(now())
+
+  @@index([movimientoId])
+}
+
+// ════════════════════════════════════════════════════════════
+// Clientes / Cuenta corriente
+// ════════════════════════════════════════════════════════════
+
+model Cliente {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  razonSocial String
+  cuit        String
+  contacto    String?
+  email       String?
+  telefono    String?
+  direccion   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  facturas      Factura[]
+  movimientosCC MovimientoCuentaCorriente[]
+
+  @@index([tenantId])
+}
+
+model MovimientoCuentaCorriente {
+  id          String     @id @default(uuid())
+  clienteId   String?
+  cliente     Cliente?   @relation(fields: [clienteId], references: [id])
+  proveedorId String?
+  proveedor   Proveedor? @relation(fields: [proveedorId], references: [id])
+  facturaId   String?
+  factura     Factura?   @relation(fields: [facturaId], references: [id])
+  monto       Decimal    @db.Decimal(14, 2)
+  saldo       Decimal    @db.Decimal(14, 2)
+  fecha       DateTime   @default(now())
+  descripcion String?
+  createdAt   DateTime   @default(now())
+
+  @@index([clienteId])
+  @@index([proveedorId])
+}
+
+// ════════════════════════════════════════════════════════════
+// Facturación
+// ════════════════════════════════════════════════════════════
+
+model Factura {
+  id          String               @id @default(uuid())
+  tenantId    String
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  tipo        TipoFactura
+  operacion   TipoOperacionFactura
+  numero      String
+  clienteId   String?
+  cliente     Cliente?             @relation(fields: [clienteId], references: [id])
+  proveedorId String?
+  proveedor   Proveedor?           @relation(fields: [proveedorId], references: [id])
+  fecha       DateTime
+  cae         String?
+  importeNeto Decimal              @db.Decimal(14, 2)
+  iva         Decimal              @db.Decimal(14, 2)
+  total       Decimal              @db.Decimal(14, 2)
+  estado      EstadoFactura        @default(PENDIENTE)
+  archivoUrl  String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  movimientosFinancieros MovimientoFinanciero[]
+  movimientosCC          MovimientoCuentaCorriente[]
+  adjuntos               FacturaAdjunto[]
+
+  @@index([tenantId])
+  @@index([operacion])
+  @@index([estado])
+  @@index([fecha])
+}
+
+model FacturaAdjunto {
+  id            String   @id @default(uuid())
+  facturaId     String
+  factura       Factura  @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+  url           String
+  nombreArchivo String
+  createdAt     DateTime @default(now())
+
+  @@index([facturaId])
+}
+
+// ════════════════════════════════════════════════════════════
+// Notificaciones / Backups / Configuración
+// ════════════════════════════════════════════════════════════
+
+model Notificacion {
+  id          String           @id @default(uuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+  tipo        TipoNotificacion
+  mensaje     String
+  leida       Boolean          @default(false)
+  entidadTipo String?
+  entidadId   String?
+  createdAt   DateTime         @default(now())
+
+  @@index([userId, leida])
+  @@index([tenantId])
+}
+
+model BackupLog {
+  id           String       @id @default(uuid())
+  tenantId     String
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  tipo         TipoBackup
+  estado       EstadoBackup
+  archivoUrl   String?
+  tamanioBytes BigInt?
+  iniciadoEn   DateTime     @default(now())
+  finalizadoEn DateTime?
+
+  @@index([tenantId])
+}
+
+model EmpresaConfig {
+  id          String   @id @default(uuid())
+  tenantId    String   @unique
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  razonSocial String
+  cuit        String?
+  logoUrl     String?
+  direccion   String?
+  telefono    String?
+  ivaGeneral  Decimal  @default(21) @db.Decimal(5, 2)
+}
+
+model ParametroSistema {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  clave    String
+  valor    String
+
+  @@unique([tenantId, clave])
+  @@index([tenantId])
+}
