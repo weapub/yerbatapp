@@ -42,7 +42,7 @@ export const CamposListPage = () => {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <div className="relative w-64">
+        <div className="relative w-full sm:w-64">
           <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Buscar por nombre o ubicación"

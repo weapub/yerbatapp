@@ -93,35 +93,37 @@ export const ParametrosTab = () => {
         ) : !data || data.length === 0 ? (
           <EmptyState title="Sin parámetros configurados" />
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-              <tr>
-                <th className="px-4 py-3 font-medium">Clave</th>
-                <th className="px-4 py-3 font-medium">Valor</th>
-                {canManage && <th className="px-4 py-3" />}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {data.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-900 dark:text-gray-100">{p.clave}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{p.valor}</td>
-                  {canManage && (
-                    <td className="px-4 py-3 text-right">
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          if (confirm(`¿Eliminar el parámetro "${p.clave}"?`)) deleteMutation.mutate(p.clave);
-                        }}
-                      >
-                        <TrashIcon className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </td>
-                  )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Clave</th>
+                  <th className="px-4 py-3 font-medium">Valor</th>
+                  {canManage && <th className="px-4 py-3" />}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {data.map((p) => (
+                  <tr key={p.id}>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-900 dark:text-gray-100">{p.clave}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{p.valor}</td>
+                    {canManage && (
+                      <td className="px-4 py-3 text-right">
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            if (confirm(`¿Eliminar el parámetro "${p.clave}"?`)) deleteMutation.mutate(p.clave);
+                          }}
+                        >
+                          <TrashIcon className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </div>

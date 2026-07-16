@@ -30,7 +30,7 @@ export const UsersPage = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Usuarios</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Administración de usuarios, roles y accesos</p>

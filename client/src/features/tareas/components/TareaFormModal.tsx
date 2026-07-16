@@ -85,7 +85,7 @@ export const TareaFormModal = ({ open, onClose }: { open: boolean; onClose: () =
 
   return (
     <Modal open={open} onClose={onClose} title="Nueva tarea">
-      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
+      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="flex flex-col gap-4">
         <Select label="Tipo de tarea" error={errors.tipo?.message} {...register('tipo')}>
           {Object.entries(TIPO_TAREA_LABEL).map(([value, label]) => (
             <option key={value} value={value}>

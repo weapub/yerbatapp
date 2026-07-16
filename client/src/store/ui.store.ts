@@ -14,10 +14,12 @@ export const useUiStore = create<UiState>()(
   persist(
     (set, get) => ({
       theme: 'light',
-      sidebarOpen: true,
+      // Drawer del sidebar en mobile: arranca cerrado siempre (no se persiste,
+      // ver partialize) — en desktop el sidebar es estático y no depende de esto.
+      sidebarOpen: false,
       toggleTheme: () => set({ theme: get().theme === 'light' ? 'dark' : 'light' }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
     }),
-    { name: 'yerbatapp-ui' },
+    { name: 'yerbatapp-ui', partialize: (state) => ({ theme: state.theme }) },
   ),
 );

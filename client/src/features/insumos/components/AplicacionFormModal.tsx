@@ -111,7 +111,7 @@ export const AplicacionFormModal = ({ open, onClose, tipo }: AplicacionFormModal
 
   return (
     <Modal open={open} onClose={onClose} title={`Nueva aplicación de ${tipoLabel[tipo]}`}>
-      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
+      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="flex flex-col gap-4">
         <Select label="Campo" error={errors.campoId?.message} {...register('campoId')}>
           <option value="">Seleccionar campo</option>
           {campos?.data.map((c) => (
@@ -161,7 +161,7 @@ export const AplicacionFormModal = ({ open, onClose, tipo }: AplicacionFormModal
 
         <Input label="Fecha" type="date" error={errors.fecha?.message} {...register('fecha')} />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input
             label="Dosis por hectárea"
             type="number"

@@ -70,48 +70,50 @@ export const BackupsTab = () => {
         ) : !data || data.length === 0 ? (
           <EmptyState title="Sin backups todavía" description="Generá el primero con el botón de arriba." />
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
-              <tr>
-                <th className="px-4 py-3 font-medium">Fecha</th>
-                <th className="px-4 py-3 font-medium">Tipo</th>
-                <th className="px-4 py-3 font-medium">Estado</th>
-                <th className="px-4 py-3 font-medium">Tamaño</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {data.map((b) => (
-                <tr key={b.id}>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                    {new Date(b.iniciadoEn).toLocaleString('es-AR')}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{b.tipo}</td>
-                  <td className="px-4 py-3">
-                    <Badge tone={ESTADO_TONE[b.estado]}>{b.estado}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{formatBytes(b.tamanioBytes)}</td>
-                  <td className="px-4 py-3">
-                    {b.estado === 'COMPLETADO' && (
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" onClick={() => backupsApi.descargar(b.id)} title="Descargar">
-                          <ArrowDownTrayIcon className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleRestaurar(b)}
-                          loading={restaurandoId === b.id}
-                          title="Restaurar (destructivo)"
-                        >
-                          <ArrowPathIcon className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    )}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-gray-800">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Fecha</th>
+                  <th className="px-4 py-3 font-medium">Tipo</th>
+                  <th className="px-4 py-3 font-medium">Estado</th>
+                  <th className="px-4 py-3 font-medium">Tamaño</th>
+                  <th className="px-4 py-3" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {data.map((b) => (
+                  <tr key={b.id}>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
+                      {new Date(b.iniciadoEn).toLocaleString('es-AR')}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{b.tipo}</td>
+                    <td className="px-4 py-3">
+                      <Badge tone={ESTADO_TONE[b.estado]}>{b.estado}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{formatBytes(b.tamanioBytes)}</td>
+                    <td className="px-4 py-3">
+                      {b.estado === 'COMPLETADO' && (
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" onClick={() => backupsApi.descargar(b.id)} title="Descargar">
+                            <ArrowDownTrayIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleRestaurar(b)}
+                            loading={restaurandoId === b.id}
+                            title="Restaurar (destructivo)"
+                          >
+                            <ArrowPathIcon className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </div>

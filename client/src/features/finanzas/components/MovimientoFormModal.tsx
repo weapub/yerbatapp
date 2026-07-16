@@ -77,7 +77,7 @@ export const MovimientoFormModal = ({ open, onClose }: { open: boolean; onClose:
 
   return (
     <Modal open={open} onClose={onClose} title="Nuevo movimiento">
-      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
+      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="flex flex-col gap-4">
         <Select label="Tipo" error={errors.tipo?.message} {...register('tipo')}>
           <option value="INGRESO">Ingreso</option>
           <option value="EGRESO">Egreso</option>

@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import {
   Squares2X2Icon,
@@ -16,6 +17,7 @@ import {
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '@/store/auth.store';
+import { useUiStore } from '@/store/ui.store';
 
 const primaryNav = [
   { to: '/', label: 'Dashboard', icon: Squares2X2Icon, end: true },
@@ -37,6 +39,14 @@ const adminNav = [{ to: '/usuarios', label: 'Usuarios', icon: UsersIcon }];
 
 export const Sidebar = () => {
   const rol = useAuthStore((s) => s.user?.rol);
+  const sidebarOpen = useUiStore((s) => s.sidebarOpen);
+  const setSidebarOpen = useUiStore((s) => s.setSidebarOpen);
+  const location = useLocation();
+
+  // Cerrar el drawer al navegar (no tiene efecto en desktop, donde es estático).
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname, setSidebarOpen]);
 
   const linkClasses = ({ isActive }: { isActive: boolean }) =>
     clsx(
@@ -47,34 +57,50 @@ export const Sidebar = () => {
     );
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-      <div className="flex items-center gap-2 px-5 py-5">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-800 text-sm font-bold text-mate-400">
-          Y
-        </span>
-        <span className="text-base font-semibold text-gray-900 dark:text-gray-100">YerbatApp</span>
-      </div>
+    <>
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3">
-        {primaryNav.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.end} className={linkClasses}>
-            <item.icon className="h-5 w-5" />
-            {item.label}
-          </NavLink>
-        ))}
-
-        {rol === 'ADMIN' && (
-          <>
-            <p className="mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Administración</p>
-            {adminNav.map((item) => (
-              <NavLink key={item.to} to={item.to} className={linkClasses}>
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </NavLink>
-            ))}
-          </>
+      <aside
+        className={clsx(
+          'fixed inset-y-0 left-0 z-40 flex h-full w-64 shrink-0 flex-col border-r border-gray-200 bg-white transition-transform duration-200 ease-in-out dark:border-gray-800 dark:bg-gray-900',
+          'lg:static lg:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
-      </nav>
-    </aside>
+      >
+        <div className="flex items-center gap-2 px-5 py-5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-800 text-sm font-bold text-mate-400">
+            Y
+          </span>
+          <span className="text-base font-semibold text-gray-900 dark:text-gray-100">YerbatApp</span>
+        </div>
+
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3">
+          {primaryNav.map((item) => (
+            <NavLink key={item.to} to={item.to} end={item.end} className={linkClasses}>
+              <item.icon className="h-5 w-5" />
+              {item.label}
+            </NavLink>
+          ))}
+
+          {rol === 'ADMIN' && (
+            <>
+              <p className="mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Administración</p>
+              {adminNav.map((item) => (
+                <NavLink key={item.to} to={item.to} className={linkClasses}>
+                  <item.icon className="h-5 w-5" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </>
+          )}
+        </nav>
+      </aside>
+    </>
   );
 };

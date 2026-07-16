@@ -123,7 +123,7 @@ export const RendimientoFormModal = ({ open, onClose }: { open: boolean; onClose
 
         <Input label="Fecha" type="date" error={errors.fecha?.message} {...register('fecha')} />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input
             label="Producción"
             type="number"
@@ -137,7 +137,7 @@ export const RendimientoFormModal = ({ open, onClose }: { open: boolean; onClose
           </Select>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input label="Costo ($)" type="number" step="0.01" {...register('costo')} />
           <Input label="Ingreso ($)" type="number" step="0.01" {...register('ingreso')} />
         </div>

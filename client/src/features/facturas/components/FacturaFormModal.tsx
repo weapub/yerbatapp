@@ -100,8 +100,8 @@ export const FacturaFormModal = ({ open, onClose }: { open: boolean; onClose: ()
 
   return (
     <Modal open={open} onClose={onClose} title="Nueva factura">
-      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
-        <div className="grid grid-cols-2 gap-3">
+      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Select label="Tipo" error={errors.tipo?.message} {...register('tipo')}>
             <option value="A">Factura A</option>
             <option value="B">Factura B</option>
@@ -138,7 +138,7 @@ export const FacturaFormModal = ({ open, onClose }: { open: boolean; onClose: ()
         <Input label="Fecha" type="date" error={errors.fecha?.message} {...register('fecha')} />
         <Input label="CAE (opcional)" {...register('cae')} />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input
             label="Importe neto ($)"
             type="number"

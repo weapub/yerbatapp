@@ -38,7 +38,7 @@ export const ClientesListPage = () => {
         )}
       </div>
 
-      <div className="relative w-72">
+      <div className="relative w-full sm:w-72">
         <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
         <Input
           placeholder="Buscar por razón social o CUIT"

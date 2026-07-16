@@ -80,7 +80,7 @@ export const TareaCalendar = ({ onSelectTarea }: { onSelectTarea: (tarea: Tarea)
             return (
               <div
                 key={key}
-                className={`min-h-[76px] rounded-lg border p-1.5 ${
+                className={`min-h-[52px] rounded-lg border p-1 sm:min-h-[76px] sm:p-1.5 ${
                   key === hoy
                     ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
                     : 'border-gray-100 dark:border-gray-800'
